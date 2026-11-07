@@ -33,6 +33,10 @@ async function enter(request, env) {
     return wrong();
   }
   if (code.length < 6 || code.length > 64) return wrong();
+  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY) {
+    console.error('SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY is missing');
+    return json({ ok: false, error: 'not_configured' }, 500);
+  }
 
   let result;
   try {
@@ -56,7 +60,13 @@ async function enter(request, env) {
   const now = Math.floor(Date.now() / 1000);
   const membershipEnd = result.expires_at ? Math.floor(new Date(result.expires_at).getTime() / 1000) : now + MAX_SESSION;
   const exp = Math.min(membershipEnd, now + MAX_SESSION);
-  const token = await createToken({ m: result.member, exp }, env.SESSION_SECRET);
+  let token;
+  try {
+    token = await createToken({ m: result.member, exp }, env.SESSION_SECRET);
+  } catch (e) {
+    console.error('Sign-in cookie failed: is SESSION_SECRET set?', e);
+    return json({ ok: false, error: 'not_configured' }, 500);
+  }
 
   return json({ ok: true, redirect: '/members/' }, 200, { 'Set-Cookie': sessionCookie(token, exp - now) });
 }

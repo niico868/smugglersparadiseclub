@@ -9,5 +9,12 @@
     // The Worker checks sign-in for these paths; everything else is served straight from /public.
     "run_worker_first": ["/api/*", "/members/*", "/members"]
   },
+  // Public Supabase settings live here so every deploy keeps them.
+  // SESSION_SECRET is NOT here: it stays a secret in the Cloudflare dashboard.
+  "vars": {
+    "SUPABASE_URL": "https://lagtnvbimfbllcivwyxy.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_p0OGdSfv7bLtUrCblLcPbQ_Iim8i9jn"
+  },
+  "keep_vars": true,
   "observability": { "enabled": true }
 }
