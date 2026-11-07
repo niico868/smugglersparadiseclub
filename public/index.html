@@ -102,6 +102,7 @@
 
   form { margin-top: calc(var(--u) * 1); display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 1); width: 100%; }
   form .error { margin-top: calc(var(--u) * 1); }
+  .down { margin: 0; color: var(--brown); font-size: var(--s-1); letter-spacing: .04em; }
   .bar {
     width: 18rem;
     max-width: 100%;
@@ -284,6 +285,7 @@
         <input id="pw" name="password" type="password" placeholder="Was de code?" autocomplete="current-password" required>
       </div>
       <button type="submit" class="enter" id="enter">Enter</button>
+      <p class="down" id="down" role="status" hidden></p>
       <p class="error" id="error" role="alert" hidden><a href="https://smugpara.com/membership">Become a member to access the site</a></p>
     </form>
 
@@ -333,8 +335,9 @@
   // A good code sets a sign-in cookie and sends the member to /members/. Anything else is a wrong code.
   var form = document.getElementById('gate'), pw = document.getElementById('pw'),
       bar = document.getElementById('bar'), err = document.getElementById('error'),
-      enter = document.getElementById('enter');
+      enter = document.getElementById('enter'), status = document.getElementById('down');
   function wrongCode() {
+    status.hidden = true;
     pw.value = '';
     bar.classList.remove('shake'); void bar.offsetWidth; bar.classList.add('shake', 'err');
     err.hidden = false;
@@ -355,11 +358,16 @@
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({ code: code })
-    }).then(function (r) { return r.ok ? r.json() : { ok: false }; })
-      .catch(function () { return { ok: false }; })
+    }).then(function (r) {
+        if (r.ok) return r.json();
+        if (r.status === 401) return { ok: false };
+        return { ok: false, down: true };          // server or setup problem, not a wrong code
+      })
+      .catch(function () { return { ok: false, down: true }; })
       .then(function (res) {
         enter.disabled = false;
         if (res && res.ok) { window.location.href = res.redirect || '/members/'; }
+        else if (res && res.down) { status.textContent = "Can't check codes right now. Try again in a minute."; status.hidden = false; }
         else { wrongCode(); }
       });
   });
